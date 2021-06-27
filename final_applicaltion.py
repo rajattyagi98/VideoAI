@@ -6,7 +6,8 @@ Created on Sat Jun 12 18:37:15 2021
 """
 
 from keras.layers import Input, Lambda, Dense, Flatten
-from keras.models import Model, load_model
+from keras.models import Model
+from keras.preprocessing import load_img, img_to_array
 from keras.applications.vgg19 import VGG19
 from keras.applications.vgg19 import preprocess_input, decode_predictions
 from keras.preprocessing import image
@@ -25,13 +26,13 @@ import os
 import shutil
 #import model1
 # Load HAAR face classifier
-face_classifier = cv2.CascadeClassifier('E://haarcascades//haarcascade_frontalface_default.xml')
+face_classifier = cv2.CascadeClassifier('E://haarcascades//haarcascade_frontalface_alt.xml')
 # Load functions
 def face_extractor(img):
     # Function detects faces and returns the cropped face
     # If no face detected, it returns the input image
     #gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
-    faces = face_classifier.detectMultiScale(img, 1.3, 5)
+    faces = face_classifier.detectMultiScale(img, 1.1, 4)
     if faces is ():
         return None
     # Crop all faces found
@@ -76,7 +77,7 @@ if(answer == 'y' and answer_1 == 'y'):
             ret, frame = cap.read()
             if face_extractor(frame) is not None:
                 count += 1
-                face = cv2.resize(face_extractor(frame), (400, 400))
+                face = cv2.resize(face_extractor(frame), (224, 224))
                 #face = cv2.cvtColor(face, cv2.COLOR_BGR2GRAY)
                 # Save file in specified directory with unique name
                 if count <= 80:
@@ -138,7 +139,7 @@ if(answer == 'y' and answer_1 == 'y'):
         r = model.fit(
           training_set,
           validation_data=test_set,
-          epochs=5,
+          epochs=8,
           steps_per_epoch=len(training_set),
           validation_steps=len(test_set)
         )
@@ -155,45 +156,38 @@ if(answer == 'y' and answer_1 == 'y'):
         plt.show()
         plt.savefig('AccVal_acc')
         print("MODEL CREATED")
+        import tensorflow as tf
+        from keras.models import load_model
+        model.save('C://Users//RAJAT//.spyder-py3//FACE_RECOGNITION//facefeatures_new_model.h5')
         video_capture = cv2.VideoCapture(0)
         while True:
             _, frame = video_capture.read()
             #canvas = detect(gray, frame)
             #image, face =face_detector(frame)
-            for file in os.listdir("C://Users//RAJAT//.spyder-py3//photo"):
-                face = cv2.imread(file)
-                if type(face) is np.ndarray:
-                    face = cv2.resize(face, (224, 224))
-                    im = Image.fromarray(face, 'RGB')
-                    #Resizing into 128x128 because we trained the model with this image size.
-                    img_array = np.array(im)
-                    #Our keras model used a 4D tensor, (images x height x width x channel)
-                        #So changing dimension 128x128x3 into 1x128x128x3 
-                    img_array = np.expand_dims(img_array, axis=0)
-                    pred = model.predict(img_array)
-                    print(pred)
-                    name="None matching"
-                    if(pred[0][0]>0.63):
-                        name='tallied'
-                        cv2.putText(frame,name, (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0,255,0), 2)
-                    else:
-                        cv2.putText(frame,"No fa''''''ce found", (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (0,255,0), 2)
-            cv2.imshow('Video', frame)
-            if cv2.waitKey(1) & 0xFF == ord('q'):
+            model = load_model('C://Users//RAJAT//.spyder-py3//FACE_RECOGNITION//facefeatures_new_model.h5') 
+            predictions = []
+            for file in os.listdir('C://Users//RAJAT//.spyder-py3//photo'):
+                img_path = 'C://Users//RAJAT//.spyder-py3//photo//' + file
+                img = load_img(img_path, target_size=(400, 400))
+                x = img_to_array(img)
+                x = np.expand_dims(x, axis=0)
+                x = preprocess_input(x)
+                pred = model.predict(x)
+                frame = cv2.imread(img_path)
+                if(pred[0][0]>0.65):
+                    cv2.putText(frame,'tallied', (50, 50), cv2.FONT_HERSHEY_COMPLEX, 0.7, (0,255,0), 2)
+                    cv2.imshow('Video', frame)
+                    #cv2.imwrite(path, frame) #
+                    cv2.waitKey(50)
+                    break
+            if cv2.waitKey(1) & ord('q'):
                 break
         video_capture.release()
         cv2.destroyAllWindows()
-        #os.remove('C://Users//RAJAT//.spyder-py3//FACE_RECOGNITION//facefeatures_new_model.h5')
+        os.remove('C://Users//RAJAT//.spyder-py3//FACE_RECOGNITION//facefeatures_new_model.h5')
         real_0 = 'C://Users//RAJAT//.spyder-py3//FACE_RECOGNITION//dataset//Train//'+ candidate
         real_1 = 'C://Users//RAJAT//.spyder-py3//FACE_RECOGNITION//dataset//Test//'+ candidate
         shutil.rmtree(real_0,ignore_errors=True)
         shutil.rmtree(real_1,ignore_errors=True)
 else:
     print("You're not that guy")
-    
-    
-    
-    
-         
-        
-       
